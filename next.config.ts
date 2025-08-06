@@ -1,7 +1,18 @@
 import type { NextConfig } from "next";
+import { withContentCollections } from "@content-collections/next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+    output: "standalone",
+    compress: false,
+    poweredByHeader: false,
+    images: {
+        remotePatterns: [
+            {
+                protocol: "https",
+                hostname: "**.screenshotone.com",
+            },
+        ],
+    },
 };
 
-export default nextConfig;
+export default withContentCollections(nextConfig);

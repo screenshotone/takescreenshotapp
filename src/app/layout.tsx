@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Link from "next/link";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -27,7 +28,23 @@ export default function RootLayout({
             <body
                 className={`${geistSans.variable} ${geistMono.variable} antialiased`}
             >
-                {children}
+                <div className="font-sans items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
+                    <header>
+                        <h1 className="text-2xl font-bold">
+                            TakeScreenshot.app
+                        </h1>
+                    </header>
+                    <main>{children}</main>
+                    <footer>
+                        <p>
+                            &copy; {new Date().getFullYear()}
+                            <Link href="https://screenshotone.com">
+                                ScreenshotOne
+                            </Link>
+                            .
+                        </p>
+                    </footer>
+                </div>
             </body>
         </html>
     );

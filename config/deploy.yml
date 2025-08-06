@@ -1,0 +1,55 @@
+service: takescreenshotapp
+image: screenshotone/takescreenshotapp
+
+builder:
+    context: .
+    arch: amd64
+
+servers:
+    web:
+        hosts:
+            - <%= ENV["TARGET_WEB_HOST"] %>
+    # 3 workers with 1GB of memory and 0.5 CPU each
+    worker_1: &worker
+        hosts:
+            - <%= ENV["TARGET_WORKER_HOST"] %>
+        proxy: false
+        cmd: /usr/bin/dumb-init -- /bin/sh /app/jobs.sh
+        options:
+            memory: 1024m
+            cpus: 0.5
+    worker_2:
+        <<: *worker
+    worker_3:
+        <<: *worker
+
+logging:
+    driver: loki
+    options:
+        loki-url: <%= ENV["LOKI_URL"] %>
+        loki-retries: 2
+        loki-timeout: 1s
+        loki-max-backoff: 800ms
+        loki-batch-size: 400
+        keep-file: true
+        loki-external-labels: app=screenshotone-takescreenshotapp,container_name={{.Name}}
+
+volumes:
+    - data:/app/data:rw
+
+proxy:
+    host: takescreenshot.app
+    ssl: true
+    forward_headers: false
+    healthcheck:
+        interval: 3
+        path: /health
+        timeout: 3
+    app_port: 3000
+
+registry:
+    server: <%= ENV["DOCKER_REGISTRY_SERVER"] %>
+    username:
+        - DOCKER_REGISTRY_USERNAME
+    password:
+        - DOCKER_REGISTRY_PASSWORD
