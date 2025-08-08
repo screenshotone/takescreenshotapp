@@ -63,7 +63,7 @@ export default function ScreenshotForm() {
                     {errorMessage}
                 </p>
             )}
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                     control={form.control}
                     name="url"
@@ -77,13 +77,15 @@ export default function ScreenshotForm() {
                                 />
                             </FormControl>
                             <FormDescription>
-                                Enter a URL of a page to render a screenshot.
+                                Enter the URL of a page to render a screenshot.
                             </FormDescription>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
-                <Button type="submit">Render</Button>
+                <div className="flex justify-end">
+                    <Button type="submit">Render →</Button>
+                </div>
             </form>
         </Form>
     );

@@ -1,5 +1,11 @@
 import ScreenshotForm from "@/components/screenshot-form";
 
 export default function Home() {
-    return <ScreenshotForm />;
+    return (
+        <div className="mx-auto flex items-center justify-center">
+            <div className="max-w-lg mx-auto flex flex-col gap-4 bg-white rounded-lg shadow p-8">
+                <ScreenshotForm />
+            </div>
+        </div>
+    );
 }

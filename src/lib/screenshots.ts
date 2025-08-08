@@ -4,14 +4,12 @@ import { LibsqlError } from "@libsql/client";
 import { and, desc, eq, lt, sql } from "drizzle-orm";
 import { Client, TakeOptions } from "screenshotone-api-sdk";
 import { wait } from "./utils";
+import { cacheTtl } from "@/config";
 
 const client = new Client(
     process.env.SCREENSHOTONE_API_ACCESS_KEY!,
     process.env.SCREENSHOTONE_API_SECRET_KEY!
 );
-
-// one month
-const cacheTtl = 2592000;
 
 export async function requestScreenshot(url: string): Promise<string> {
     const screenshotId = crypto.randomUUID();
