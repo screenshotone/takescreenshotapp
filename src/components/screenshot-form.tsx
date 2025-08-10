@@ -18,6 +18,14 @@ import { Input } from "@/components/ui/input";
 import { screenshotFormSchema } from "@/lib/validations";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "./ui/select";
+import { Checkbox } from "./ui/checkbox";
 
 export default function ScreenshotForm() {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -26,6 +34,8 @@ export default function ScreenshotForm() {
         resolver: zodResolver(screenshotFormSchema),
         defaultValues: {
             url: "",
+            device: "desktop",
+            fullPage: false,
         },
     });
 
@@ -33,7 +43,11 @@ export default function ScreenshotForm() {
         try {
             const response = await fetch("/api/screenshot", {
                 method: "POST",
-                body: JSON.stringify({ url: values.url }),
+                body: JSON.stringify({
+                    url: values.url,
+                    device: values.device,
+                    fullPage: values.fullPage,
+                }),
             });
 
             const data = await response.json();
@@ -79,6 +93,56 @@ export default function ScreenshotForm() {
                             <FormDescription>
                                 Enter the URL of a page to render a screenshot.
                             </FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="device"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Device</FormLabel>
+                            <FormControl>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a device" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="desktop">
+                                            Desktop{" "}
+                                            <span className="text-xs text-muted-foreground">
+                                                (1920x1080)
+                                            </span>
+                                        </SelectItem>
+                                        <SelectItem value="mobile">
+                                            Mobile{" "}
+                                            <span className="text-xs text-muted-foreground">
+                                                (iPhone X)
+                                            </span>
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </FormControl>
+                            <FormDescription>
+                                Choose the browser viewport size.
+                            </FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="fullPage"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row gap-2 items-center">
+                            <FormControl>
+                                <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                            <FormLabel>Full page</FormLabel>
                             <FormMessage />
                         </FormItem>
                     )}

@@ -1,7 +1,7 @@
 import { requestScreenshot } from "@/lib/screenshots";
 import { screenshotFormSchema } from "@/lib/validations";
 import { NextRequest, NextResponse } from "next/server";
-import { connection } from 'next/server'
+import { connection } from "next/server";
 
 export async function POST(request: NextRequest) {
     await connection();
@@ -17,7 +17,11 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const screenshotId = await requestScreenshot(requestData.data.url);
+        const screenshotId = await requestScreenshot(
+            requestData.data.url,
+            requestData.data.device,
+            requestData.data.fullPage
+        );
 
         return NextResponse.json({
             url: `${process.env.BASE_URL}/screenshots/${screenshotId}`,

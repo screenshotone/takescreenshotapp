@@ -1,13 +1,19 @@
 import AutoRefresh from "@/components/auto-refresh";
+import { CopyButton } from "@/components/copy-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { cacheTtl } from "@/config";
+import { baseUrl, cacheTtl } from "@/config";
 import db from "@/db";
 import { Screenshot, screenshotsTable } from "@/db/schema";
 import { cn, generateUserFriendlyErrorMessage } from "@/lib/utils";
 import { eq } from "drizzle-orm";
-import { AlertCircleIcon, DownloadIcon, ExternalLink } from "lucide-react";
+import {
+    AlertCircleIcon,
+    CopyIcon,
+    DownloadIcon,
+    ExternalLink,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -52,6 +58,14 @@ function format(screenshot: Screenshot) {
         friendlyErrorMessage:
             screenshot.errorCode &&
             generateUserFriendlyErrorMessage(screenshot.errorCode),
+        title:
+            screenshot.device === "mobile"
+                ? `Mobile screenshot of ${readableUrl} (${
+                      screenshot.fullPage ? "full page" : "above the fold"
+                  })`
+                : `Desktop screenshot of ${readableUrl} (${
+                      screenshot.fullPage ? "full page" : "above the fold"
+                  })`,
     };
 }
 
@@ -81,38 +95,45 @@ export default async function ScreenshotPage({
         progress,
         isError,
         friendlyErrorMessage,
+        title,
     } = format(screenshot);
 
     return (
         <div className="max-w-7xl mx-auto flex flex-col gap-4 bg-white rounded-lg shadow p-8">
             {(screenshot.status === "in_progress" ||
                 screenshot.status === "pending") && <AutoRefresh />}
-            <div className="flex flex-row gap-2 items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 sm:items-center justify-between">
                 <h1
                     className={cn(
-                        "text-xl font-bold",
+                        "text-xl font-bold text-balance",
                         isError && "text-destructive"
                     )}
                 >
-                    Screenshot of {readableUrl}
+                    {title}
                 </h1>
-
-                {screenshot.screenshotUrl && (
-                    <Button asChild variant="default">
-                        <a
-                            href={screenshot.screenshotUrl}
-                            download={`screenshot-${hostname}.png`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            tabIndex={-1}
-                        >
-                            <DownloadIcon className="size-4" />
-                            Download
-                        </a>
-                    </Button>
-                )}
+                <div className="flex flex-row gap-2">
+                    {screenshot.screenshotUrl && (
+                        <CopyButton
+                            data={`${baseUrl}/screenshots/${screenshot.id}`}
+                        />
+                    )}
+                    {screenshot.screenshotUrl && (
+                        <Button asChild variant="default">
+                            <a
+                                href={screenshot.screenshotUrl}
+                                download={`screenshot-${hostname}.png`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                tabIndex={-1}
+                            >
+                                <ExternalLink className="size-4" />
+                                Open Full Size
+                            </a>
+                        </Button>
+                    )}
+                </div>
             </div>
-            <div className="flex flex-row gap-2 items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 sm:items-center justify-between">
                 <p className="text-sm text-gray-500">
                     This is a temporary screenshot of{" "}
                     <Link
@@ -127,7 +148,6 @@ export default async function ScreenshotPage({
                     .
                 </p>
                 <p className="text-sm text-gray-500">
-                    {" "}
                     Requested at{" "}
                     {new Date(screenshot.createdAt).toLocaleString()}.{" "}
                     <b>
@@ -146,13 +166,15 @@ export default async function ScreenshotPage({
             )}
 
             {screenshot.screenshotUrl && (
-                <div className="flex items-center justify-center mt-8 max-h-[540px] overflow-scroll">
+                <div className="relative max-w-5xl mx-auto mt-8 h-[540px] overflow-scroll">
                     <Image
                         src={screenshot.screenshotUrl}
-                        width={960}
+                        width={screenshot.device === "mobile" ? 240 : 960}
                         height={540}
                         quality={100}
-                        alt={`Screenshot of ${screenshot.url}`}
+                        className="h-auto object-contain"
+                        style={{ objectFit: "contain" }}
+                        alt={title}
                     />
                 </div>
             )}

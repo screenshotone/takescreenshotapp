@@ -4,6 +4,8 @@ import { int, sqliteTable, text } from "drizzle-orm/sqlite-core";
 export const screenshotsTable = sqliteTable("screenshots", {
     id: text().primaryKey().unique(),
     url: text().notNull(),
+    device: text({ enum: ["desktop", "mobile"] }).default("desktop"),
+    fullPage: int("full_page").default(0),
     status: text({ enum: ["pending", "in_progress", "completed", "failed"] })
         .notNull()
         .default("pending"),

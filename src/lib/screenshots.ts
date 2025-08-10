@@ -11,16 +11,24 @@ const client = new Client(
     process.env.SCREENSHOTONE_API_SECRET_KEY!
 );
 
-export async function requestScreenshot(url: string): Promise<string> {
+export async function requestScreenshot(
+    url: string,
+    device?: "desktop" | "mobile",
+    fullPage?: boolean
+): Promise<string> {
     const screenshotId = crypto.randomUUID();
 
     let attempts = 0;
     while (true) {
         try {
-            await db().insert(screenshotsTable).values({
-                id: screenshotId,
-                url,
-            });
+            await db()
+                .insert(screenshotsTable)
+                .values({
+                    id: screenshotId,
+                    url,
+                    device: device ?? "desktop",
+                    fullPage: fullPage ? 1 : 0,
+                });
             break;
         } catch (error) {
             if (
@@ -95,12 +103,22 @@ async function processScreenshot(screenshot: Screenshot) {
         return;
     }
 
-    console.log(`Processing screenshot ${screenshot.id}`);
+    console.log(
+        `Processing screenshot ${screenshot.id} (${
+            screenshot.device === "desktop" ? "desktop" : "mobile"
+        }, ${screenshot.fullPage ? "full page" : "above the fold"})`
+    );
 
     try {
         const cacheKey = screenshot.id.replace(/[^a-zA-Z0-9]/g, "");
         const { screenshotUrl, errorCode, errorMessage } =
-            await renderScreenshot(new URL(screenshot.url), "jpeg", cacheKey);
+            await renderScreenshot(
+                new URL(screenshot.url),
+                "jpeg",
+                cacheKey,
+                screenshot.device as "desktop" | "mobile",
+                screenshot.fullPage === 1
+            );
 
         await updateScreenshotResult(screenshot.id, {
             status: errorCode ? "failed" : "completed",
@@ -184,26 +202,31 @@ async function updateScreenshotResult(
 export async function renderScreenshot(
     websiteUrl: URL,
     format: "jpeg" | "png",
-    cacheKey: string
+    cacheKey: string,
+    device?: "desktop" | "mobile",
+    fullPage?: boolean
 ): Promise<{
     screenshotUrl?: string;
     errorCode?: string;
     errorMessage?: string;
 }> {
-    const screenshotUrl = await client.generateTakeURL(
-        TakeOptions.url(websiteUrl.toString())
-            .cache(true)
-            .cacheKey(cacheKey)
-            .cacheTtl(cacheTtl)
-            .blockCookieBanners(true)
-            .blockBannersByHeuristics(true)
-            .blockAds(true)
-            .blockChats(true)
-            .responseType("json")
-            .format(format)
-    );
+    const options = TakeOptions.url(websiteUrl.toString())
+        .cache(true)
+        .cacheKey(cacheKey)
+        .cacheTtl(cacheTtl)
+        .blockCookieBanners(true)
+        .blockBannersByHeuristics(true)
+        .blockAds(true)
+        .blockChats(true)
+        .responseType("json")
+        .format(format)
+        .fullPage(fullPage ?? false);
 
-    const response = await fetch(screenshotUrl);
+    if (device === "mobile") {
+        options.viewportDevice("iphone_x");
+    }
+
+    const response = await fetch(await client.generateTakeURL(options));
     if (!response.ok) {
         const data = (await response.json()) as {
             error_message: string;
