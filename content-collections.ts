@@ -9,6 +9,7 @@ const posts = defineCollection({
     schema: z.object({
         title: z.string(),
         summary: z.string(),
+        image: z.string().optional(),
     }),
     transform: async (document, context) => {
         const content = await compileMarkdown(context, document);
