@@ -1,10 +1,10 @@
-import db from "@/db";
+import { cacheTtl } from "@/config";
+import { db, executeWithRetry } from "@/db";
 import { Screenshot, screenshotsTable } from "@/db/schema";
 import { LibsqlError } from "@libsql/client";
 import { and, desc, eq, lt, sql } from "drizzle-orm";
+import { DrizzleQueryError } from "drizzle-orm/errors";
 import { Client, TakeOptions } from "screenshotone-api-sdk";
-import { wait } from "./utils";
-import { cacheTtl } from "@/config";
 
 const client = new Client(
     process.env.SCREENSHOTONE_API_ACCESS_KEY!,
@@ -18,32 +18,16 @@ export async function requestScreenshot(
 ): Promise<string> {
     const screenshotId = crypto.randomUUID();
 
-    let attempts = 0;
-    while (true) {
-        try {
-            await db()
-                .insert(screenshotsTable)
-                .values({
-                    id: screenshotId,
-                    url,
-                    device: device ?? "desktop",
-                    fullPage: fullPage ? 1 : 0,
-                });
-            break;
-        } catch (error) {
-            if (
-                error instanceof LibsqlError &&
-                error.code.startsWith("SQLITE_BUSY") &&
-                attempts < 5
-            ) {
-                attempts++;
-                await wait(100 * attempts);
-                continue;
-            }
-
-            throw error;
-        }
-    }
+    await executeWithRetry(async () => {
+        await db()
+            .insert(screenshotsTable)
+            .values({
+                id: screenshotId,
+                url,
+                device: device ?? "desktop",
+                fullPage: fullPage ? 1 : 0,
+            });
+    });
 
     return screenshotId;
 }
@@ -56,8 +40,11 @@ export async function processPendingScreenshots() {
             await processScreenshot(screenshot);
         } catch (error) {
             if (
-                error instanceof LibsqlError &&
-                error.code.startsWith("SQLITE_BUSY")
+                (error instanceof LibsqlError &&
+                    error.code.startsWith("SQLITE_BUSY")) ||
+                (error instanceof DrizzleQueryError &&
+                    error.cause instanceof LibsqlError &&
+                    error.cause.code.startsWith("SQLITE_BUSY"))
             ) {
                 // retry
                 continue;
@@ -77,23 +64,43 @@ async function removeOutdatedScreenshots() {
             .where(lt(screenshotsTable.createdAt, Date.now() - cacheTtl));
     } catch (error) {
         if (
-            error instanceof LibsqlError &&
-            error.code.startsWith("SQLITE_BUSY")
+            (error instanceof LibsqlError &&
+                error.code.startsWith("SQLITE_BUSY")) ||
+            (error instanceof DrizzleQueryError &&
+                error.cause instanceof LibsqlError &&
+                error.cause.code.startsWith("SQLITE_BUSY"))
         ) {
             // retry
             return;
         }
+
+        throw error;
     }
 }
 
 async function fetchPendingScreenshots(): Promise<Screenshot[]> {
-    const screenshots = await db()
-        .select()
-        .from(screenshotsTable)
-        .where(eq(screenshotsTable.status, "pending"))
-        .orderBy(desc(screenshotsTable.createdAt));
+    try {
+        const screenshots = await db()
+            .select()
+            .from(screenshotsTable)
+            .where(eq(screenshotsTable.status, "pending"))
+            .orderBy(desc(screenshotsTable.createdAt));
 
-    return screenshots;
+        return screenshots;
+    } catch (error) {
+        if (
+            (error instanceof LibsqlError &&
+                error.code.startsWith("SQLITE_BUSY")) ||
+            (error instanceof DrizzleQueryError &&
+                error.cause instanceof LibsqlError &&
+                error.cause.code.startsWith("SQLITE_BUSY"))
+        ) {
+            // retry
+            return [];
+        }
+
+        throw error;
+    }
 }
 
 async function processScreenshot(screenshot: Screenshot) {
@@ -158,8 +165,11 @@ async function claimScreenshot(screenshotId: string): Promise<boolean> {
         return result.length > 0;
     } catch (error) {
         if (
-            error instanceof LibsqlError &&
-            error.code.startsWith("SQLITE_BUSY")
+            (error instanceof LibsqlError &&
+                error.code.startsWith("SQLITE_BUSY")) ||
+            (error instanceof DrizzleQueryError &&
+                error.cause instanceof LibsqlError &&
+                error.cause.code.startsWith("SQLITE_BUSY"))
         ) {
             // retry
             return false;
