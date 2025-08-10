@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import { Aperture } from "lucide-react";
+import GitHubButton from "@/components/github-button";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -47,25 +48,36 @@ export default function RootLayout({
                                 </Link>
                             </p>
                         </div>
-                        <div>
+                        <div className="flex items-center gap-4">
                             <Link
                                 href="/posts"
                                 className="text-sm sm:text-base"
                             >
                                 Resources
                             </Link>
+                            <GitHubButton />
                         </div>
                     </header>
                     <main className="flex-1 flex">{children}</main>
                     <footer>
-                        <p className="text-xs sm:text-sm text-gray-500">
-                            &copy; {new Date().getFullYear()} &nbsp;
-                            <Link href="/">
-                                TakeScreenshot.app
-                                <br />
-                                Render Website Screenshots without Registration
-                            </Link>
-                        </p>
+                        <div className="flex flex-col gap-2 sm:gap-0 sm:flex-row justify-between ">
+                            <p className="text-xs sm:text-sm text-gray-500">
+                                &copy; {new Date().getFullYear()} &nbsp;
+                                <Link href="/">
+                                    TakeScreenshot.app
+                                    <br />
+                                    Render Website Screenshots without
+                                    Registration
+                                </Link>
+                            </p>
+                            <ul className="text-xs sm:text-sm text-gray-500 flex flex-row items-center gap-4">
+                                <li>
+                                    <Link href="https://github.com/screenshotone/takescreenshotapp">
+                                        GitHub
+                                    </Link>
+                                </li>
+                            </ul>
+                        </div>
                     </footer>
                 </div>
             </body>
