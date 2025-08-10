@@ -4,6 +4,7 @@ import "./globals.css";
 import Link from "next/link";
 import { Aperture } from "lucide-react";
 import GitHubButton from "@/components/github-button";
+import { Analytics } from "@/components/analytics";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -80,6 +81,7 @@ export default function RootLayout({
                         </div>
                     </footer>
                 </div>
+                <Analytics />
             </body>
         </html>
     );
