@@ -10,9 +10,7 @@ import { cn, generateUserFriendlyErrorMessage } from "@/lib/utils";
 import { eq } from "drizzle-orm";
 import {
     AlertCircleIcon,
-    CopyIcon,
-    DownloadIcon,
-    ExternalLink,
+    ExternalLink
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
